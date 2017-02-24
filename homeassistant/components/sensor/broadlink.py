@@ -153,6 +153,8 @@ class BroadlinkData(object):
             if retry < 1:
                 _LOGGER.error(error)
                 return
+        except vol.Invalid:
+            pass # Continue quietly if device returned malformed data
         if retry < 1 or not self._auth():
             return
         self._update(retry-1)
