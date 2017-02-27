@@ -91,7 +91,7 @@ class BroadlinkSensor(Entity):
         self._type = sensor_type
         self._broadlink_data = broadlink_data
         self._unit_of_measurement = SENSOR_TYPES[sensor_type][1]
-        self._value_template = template
+        self._value_template = value_template
         if self._value_template:
             self._value_template.hass = hass
         self.update()
