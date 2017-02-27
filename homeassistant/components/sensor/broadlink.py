@@ -65,12 +65,13 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     dev = []
     for variable in config[CONF_MONITORED_CONDITIONS]:
         if isinstance(variable, dict):
-            dev.append(BroadlinkSensor(
-                hass,
-                config.get(CONF_NAME),
-                broadlink_data,
-                variable.keys()[0],
-                variable.items()[0]))
+            for condition, tempalte in variable.items():
+                dev.append(BroadlinkSensor(
+                    hass,
+                    config.get(CONF_NAME),
+                    broadlink_data,
+                    condition,
+                    template))
         else:
             dev.append(BroadlinkSensor(
                 hass,
