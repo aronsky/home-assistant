@@ -116,8 +116,8 @@ class BroadlinkSensor(Entity):
         self._broadlink_data.update()
         if self._broadlink_data.data is None:
             return
-        if self._template:
-            self._state = self._template.render_with_possible_json_value(
+        if self._value_template:
+            self._state = self._value_template.render_with_possible_json_value(
                 self._broadlink_data.data[self._type])
         else:
             self._state = self._broadlink_data.data[self._type]
