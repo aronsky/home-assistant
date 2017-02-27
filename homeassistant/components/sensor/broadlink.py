@@ -69,14 +69,14 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
                 hass,
                 config.get(CONF_NAME),
                 broadlink_data,
-                variable))
+                variable.keys()[0],
+                variable.items()[0]))
         else:
             dev.append(BroadlinkSensor(
                 hass,
                 config.get(CONF_NAME),
                 broadlink_data,
-                variable[0],
-                variable[1]))
+                variable))
     add_devices(dev)
 
 
