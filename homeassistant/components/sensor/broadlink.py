@@ -64,7 +64,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 
     dev = []
     for variable in config[CONF_MONITORED_CONDITIONS]:
-        if variable in SENSOR_TYPES:
+        if isinstance(variable, dict):
             dev.append(BroadlinkSensor(
                 hass,
                 config.get(CONF_NAME),
