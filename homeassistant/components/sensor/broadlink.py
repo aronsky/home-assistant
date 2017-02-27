@@ -119,7 +119,7 @@ class BroadlinkSensor(Entity):
             return
         if self._value_template:
             self._state = self._value_template.render_with_possible_json_value(
-                self._broadlink_data.data[self._type])
+                str(self._broadlink_data.data[self._type]))
         else:
             self._state = self._broadlink_data.data[self._type]
 
