@@ -4,11 +4,17 @@ Generic fan platform, a-la generic thermostat.
 For more details about this platform, please refer to the documentation
 https://home-assistant.io/components/fan.generic_fan/
 """
+import asyncio
+import logging
+import voluptuous as vol
+
+from homeassistant.components import switch
 from homeassistant.components.fan import (SPEED_LOW, SPEED_MEDIUM, SPEED_HIGH,
                                           FanEntity, SUPPORT_SET_SPEED,
                                           SUPPORT_OSCILLATE, SUPPORT_DIRECTION,
                                           PLATFORM_SCHEMA)
-from homeassistant.const import STATE_OFF
+from homeassistant.const import STATE_OFF, CONF_DEVICES, CONF_NAME
+import homeassistant.helpers.config_validation as cv
 
 CONF_POWER_SWITCH = "power"
 CONF_SET_SPEED = "set_speed"
@@ -17,13 +23,9 @@ CONF_OSCILLATION_SWITCH = "oscillation"
 CONF_SET_DIRECTION = "set_direction"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_DEVICES): vol.All(cv.ensure_list, [
-        {
-            vol.Required(CONF_NAME): cv.string,
-            vol.Required(CONF_POWER_SWITCH): cv.entity_id,
-            vol.Optional(CONF_OSCILLATION_SWITCH, default=None): cv.entity_id,
-        }
-    ])
+    vol.Required(CONF_NAME): cv.string,
+    vol.Required(CONF_POWER_SWITCH): cv.entity_id,
+    vol.Optional(CONF_OSCILLATION_SWITCH, default=None): cv.entity_id,
 })
 
 # pylint: disable=unused-argument
@@ -50,28 +52,28 @@ class GenericFan(FanEntity):
 
     @property
     def should_poll(self):
-        """No polling needed for a MQTT fan."""
-        raise NotImplementedError()
+        """No polling needed for a generic fan."""
+        return False
 
     @property
     def assumed_state(self):
-        """Return true if we do optimistic updates."""
-        raise NotImplementedError()
+        """Return true, since state is not maintained by a sensor."""
+        return False
 
     @property
     def is_on(self):
         """Return true if device is on."""
-        raise NotImplementedError()
+        return switch.is_on(self.hass, self._power_switch)
 
     @property
     def name(self) -> str:
         """Get entity name."""
-        raise NotImplementedError()
+        return self._name
 
     @property
     def speed_list(self) -> list:
         """Get the list of available speeds."""
-        raise NotImplementedError()
+        return [1, 2, 3]
 
     @property
     def supported_features(self) -> int:
@@ -82,12 +84,18 @@ class GenericFan(FanEntity):
     @property
     def speed(self):
         """Return the current speed."""
-        raise NotImplementedError()
+        if not self.is_on:
+            return 0
+        else:
+            raise NotImplementedError()
 
     @property
     def oscillating(self):
         """Return the oscillation state."""
-        raise NotImplementedError()
+        if not self._oscillation_switch:
+            return False
+        else:
+            raise NotImplementedError()
 
     @asyncio.coroutine
     def async_turn_on(self, speed: str=None) -> None:
@@ -95,7 +103,7 @@ class GenericFan(FanEntity):
 
         This method is a coroutine.
         """
-        raise NotImplementedError()
+        switch.async_turn_on(self.hass, self._power_switch)
 
         if speed:
             yield from self.async_set_speed(speed)
@@ -106,7 +114,7 @@ class GenericFan(FanEntity):
 
         This method is a coroutine.
         """
-        raise NotImplementedError()
+        switch.async_turn_off(self.hass, self._power_switch)
 
     @asyncio.coroutine
     def async_set_speed(self, speed: str) -> None:
