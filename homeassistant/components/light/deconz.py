@@ -12,38 +12,43 @@ from homeassistant.components.light import (
     ATTR_TRANSITION, ATTR_XY_COLOR, EFFECT_COLORLOOP, FLASH_LONG, FLASH_SHORT,
     SUPPORT_BRIGHTNESS, SUPPORT_COLOR_TEMP, SUPPORT_EFFECT, SUPPORT_FLASH,
     SUPPORT_RGB_COLOR, SUPPORT_TRANSITION, SUPPORT_XY_COLOR, Light)
+from homeassistant.config import DATA_CUSTOMIZE
 from homeassistant.core import callback
 from homeassistant.util.color import color_RGB_to_xy
 
 DEPENDENCIES = ['deconz']
 
 ATTR_LIGHT_GROUP = 'LightGroup'
+ATTR_TRANSITION = 'transition'
+DEFAULT_TRANSITION = 0.5
 
 
 @asyncio.coroutine
 def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
     """Set up the deCONZ light."""
+
     if discovery_info is None:
         return
-
+    
     lights = hass.data[DECONZ_DATA].lights
     groups = hass.data[DECONZ_DATA].groups
     entities = []
 
     for light in lights.values():
-        entities.append(DeconzLight(light))
+        entities.append(DeconzLight(hass, light))
 
     for group in groups.values():
         if group.lights:  # Don't create entity for group not containing light
-            entities.append(DeconzLight(group))
+            entities.append(DeconzLight(hass, group))
     async_add_devices(entities, True)
 
 
 class DeconzLight(Light):
     """Representation of a deCONZ light."""
 
-    def __init__(self, light):
+    def __init__(self, hass, light):
         """Set up light and add update callback to get data from websocket."""
+        self.hass = hass
         self._light = light
 
         self._features = SUPPORT_BRIGHTNESS
@@ -89,6 +94,13 @@ class DeconzLight(Light):
     def xy_color(self):
         """Return the XY color value."""
         return self._light.xy
+    
+    @property
+    def transition(self):
+        """Return the default transition time."""
+        return self.hass.data[DATA_CUSTOMIZE] \
+                   .get(self.entity_id) \
+                   .get(ATTR_TRANSITION, DEFAULT_TRANSITION)
 
     @property
     def is_on(self):
@@ -142,6 +154,8 @@ class DeconzLight(Light):
 
         if ATTR_TRANSITION in kwargs:
             data['transitiontime'] = int(kwargs[ATTR_TRANSITION]) * 10
+        else:
+            data['transitiontime'] = int(self.transition) * 10
 
         if ATTR_FLASH in kwargs:
             if kwargs[ATTR_FLASH] == FLASH_SHORT:
@@ -162,12 +176,16 @@ class DeconzLight(Light):
     @asyncio.coroutine
     def async_turn_off(self, **kwargs):
         """Turn off light."""
-        data = {'on': False}
+        data = {
+            'on': False,
+            'bri': 0
+            }
 
         if ATTR_TRANSITION in kwargs:
-            data = {'bri': 0}
             data['transitiontime'] = int(kwargs[ATTR_TRANSITION]) * 10
-
+        else:
+            data['transitiontime'] = int(self.transition) * 10
+        
         if ATTR_FLASH in kwargs:
             if kwargs[ATTR_FLASH] == FLASH_SHORT:
                 data['alert'] = 'select'
